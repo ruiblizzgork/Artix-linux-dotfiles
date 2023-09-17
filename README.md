@@ -449,7 +449,20 @@ yay lutris
 yay btop
 yay cmus
 yay cava
+yay ark
+yay p7zip
 yay discord
 yay betterdiscordctl
 yay telegram
+```
+### Thunar
+```bash
+yay thunar
+yay gvfs
+yay thunar-archive-plugin
+yay thunar-media-tags-plugin
+yay thunar-volman
+yay tumbler
+yay raw-thumbnailer
+yay libgsf
 ```

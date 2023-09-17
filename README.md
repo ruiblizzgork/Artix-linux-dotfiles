@@ -68,7 +68,6 @@ sdb      8:16   0 465,8G  0 disk
 └─sdb1   8:17   0 465,8G  0 part
 ```
 
-### Интернет
 Проверяем соединение:
 
 ```bash
@@ -76,48 +75,55 @@ ping google.com
 ```
 Если вы используете Wi-Fi то подключитесь к сети при помощи утилиты [wpa_supplicant](https://wiki.archlinux.org/title/Wpa_supplicant) или [iw](https://wireless.wiki.kernel.org/en/users/documentation/iw).
 
-### Cистемные часы
-Активируйте NTP для синхронизации часов компьютера c реальным временем:
+Активируйте NTP для синхронизации часов компьютера с реальным временем:
 ```bash
 dinitctl start ntpd
 ```
 ### Установка базовой системы
-Я буду устанавливать не стандартное ядро `linux`, а [linux-zen](https://wiki.archlinux.org/title/Kernel#Officially_supported_kernels).
+Я буду устанавливать нестандартное ядро `linux`, а [linux-zen](https://wiki.archlinux.org/title/Kernel#Officially_supported_kernels).
 > **Внимание**, если вы не хотите устанавливать `sudo`, то обходите стороной пакет `base-devel`.
 
 ```bash
 basestrap /mnt base dinit elogind-dinit linux-zen linux-zen-headers linux-firmware
 ```
-
-### Закончим монтирование, создадим swap file и сгенерируем fstab
 Монтируем все остальные разделы в /mnt/mnt/...
 ```bash
 mkdir -p /mnt/mnt/hd
 mount /dev/sdb1 /mnt/mnt/hd
+
+lsblk
+NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+sda      8:0    0 223,6G  0 disk
+├─sda1   8:1    0   100M  0 part /boot/efi
+├─--
+├─--
+├─sda4   8:4    0    34G  0 part /
+├─sda5   8:5    0   136G  0 part /home
+└─--
+sdb      8:16   0 465,8G  0 disk
+└─sdb1   8:17   0 465,8G  0 part /mnt/hd
 ```
-Создадим [swap file](https://wiki.archlinux.org/title/swap#Swap_file) на 4Gib
+Создадим [swap file](https://wiki.archlinux.org/title/swap#Swap_file) на 4Gib:
 ```bash
 btrfs subvolume create /mnt/swap
 btrfs filesystem mkswapfile --size 4g --uuid clear /mnt/swap/swapfile
 swapon /mnt/swap/swapfile
 ```
 
-Cгенерируем конфиг `fstab` при помощи `fstabgen`:
+Генерируем конфиг `fstab` при помощи `fstabgen`:
 ```bash
 fstabgen -U /mnt >> /mnt/etc/fstab
 ```
 ## Настройка базовой системы
-
-### Меняем корень
+Меняем корень:
 ```bash
 artix-chroot /mnt
 ```
-
-### Устанавливаем нужные пакеты
+Устанавливаем нужные пакеты:
 ```bash
 pacman -S vim neofetch grub efibootmgr os-prober dhclient doas connman-dinit terminus-font artix-archlinux-support ranger
 ```
-> Если вам нужна поддержка Wi-Fi, то устанавливайте [wpa_supplicant](https://wiki.archlinux.org/title/Wpa_supplicant) или [iw](https://wireless.wiki.kernel.org/en/users/documentation/iw)
+> Если вам нужна поддержка Wi-Fi, то устанавливайте [wpa_supplicant](https://wiki.archlinux.org/title/Wpa_supplicant) или [iw](https://wireless.wiki.kernel.org/en/users/documentation/iw).
 ```text
 vim                       - легендарный текстовый редактор
 neofetch                  - информация о системе
@@ -131,19 +137,16 @@ terminus-font             - шрифт для tty, поддерживающий 
 artix-archlinux-support   - поддержка репозиториев arch'а
 ranger                    - консольный файловый менеджер
 ```
-Укажем редактор по умолчанию
+Укажем редактор по умолчанию:
 ```bash
 EDITOR=vim
 ```
-### Конфигурируем часовой пояс. Утилита `hwclock` позволит установить время по аппаратным часам
-
+Конфигурируем часовой пояс. Утилита `hwclock` позволит установить время по аппаратным часам.
 ```bash
 ln -sf /usr/share/zoneinfo/Регион/Город /etc/timezone
 hwclock --systohc
 ```
-
-### Локали и шрифт tty
-Расскоментируем нужные нам локали в файле `/etc/locale.gen`
+Расскоментируем нужные нам локали в файле `/etc/locale.gen`.
 ```bash
 vim /etc/locale.gen
 ```
@@ -154,11 +157,11 @@ en_US.UTF-8 UTF-8
 # ...
 ru_RU.UTF-8 UTF-8
 ```
-Сгенерируем локали
+Сгенерируем локали:
 ```bash
 locale-gen
 ```
-Укажем локаль по умолчанию
+Укажем локаль по умолчанию:
 ```bash
 vim /etc/locale.conf
 ```
@@ -167,7 +170,7 @@ vim /etc/locale.conf
 LANG=en_US.UTF-8
 C_COLLATE=C
 ```
-Шрифт
+Шрифт:
 ```bash
 vim /etc/vconsole.conf
 ```
@@ -177,7 +180,7 @@ KEYMAP=en
 FONT=ter-v20b
 ```
 ### Загрузчик
-Устанавливаем grub
+Устанавливаем grub:
 ```bash
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=grub --recheck
 ```
@@ -190,55 +193,193 @@ vim /etc/default/grub
 # ...
 GRUB_DISABLE_OS_PROBER=false
 ```
-Сгенерируем конфиг grub
-> **Внимание**, если `grub` не нашел `Windows`, то нужно будет перегенерировать конфиг после перезагрузки пк
+Сгенерируем конфиг grub:
+> **Внимание**, если `grub` не нашел `Windows`, то нужно будет перегенерировать конфиг после перезагрузки пк.
 ```bash
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
-### Настройка пользователей
-Зададим пороль для root
+### Пользователи и сеть
+Зададим пороль для root:
 ```bash
 passwd
 ```
-Создадим пользователя и зададим ему пороль и группы
+Создадим пользователя и зададим ему пароль и группы:
 ```bash
 useradd -m имя_пользователя
 passwd имя_пользователя
 usermod -aG wheel,audio,video,storage имя_пользователя
 ```
-### Настройка сети
+Настроим сеть:
 В файле `/etc/hostname` укажем имя хоста, а в `/etc/hosts` укажем:
 ```bash
 127.0.0.1  localhost
 ::1        localhost
 127.0.1.1  имя_хоста.localdomain  имя_хоста
 ```
-Включим демона `connmand`  и `elogind`
+Включим демона `connmand`  и `elogind`:
 ```bash
 ln -s ../connmand /etc/dinit.d/boot.d/
 dinitctl enable elogind
 ```
-### Настройка doas
+Doas:
+
 В файле `/etc/doas.conf`:
 ```bash
 # /etc/doas.conf
 permit persist :wheel
 ```
-### Первая перезагрузка
+Перезагрузим систему:
 ```bash
 exit
 reboot
 ```
-## Послуящая настройка 
-Обновим конфиг `grub`
+## Пост-настройка и установка Hyprland
+`Grub` не определил вторую систему по этому обновим конфиг `grub`:
 ```bash
 doas grub-mkconfig -o /boot/grub/grub.cfg
 ```
-### Пропишем в системный `enviroment`
+Пропишем в системный `enviroment`
 ```bash
 echo "LIBSEAT_BACKEND=logind" >> /etc/enviroment
 ```
-### Настройка pacman
+### Настраиваем pacman, чтобы тот летал
+```bash
+doas vim /etc/pacman.conf
+```
+Раскомментируем и добавим следующие строки:
+```bash
+[options]
+IgnorePkg = sudo      # Игнорируем пакет sudo. При установки sudo pacman будет предупреждать, что он игнорируемый
+Color                 # Раскомментируем
+ParallelDownloads = 5 # Раскомментируем
 
+# Репы Arch'а
+[extra]
+Include = /etc/pacman.d/mirrorlist-arch
 
+[community]
+Include = /etc/pacman.d/mirrorlist-arch
+
+[multilib]
+Include = /etc/pacman.d/mirrorlist-arch
+```
+```bash
+doas pacman-key --init
+doas pacman-key --populate archlinux
+doas pacman-key --populate artix
+doas pacman-key --refresh-keys
+doas pacman -Sy
+```
+```bash
+doas pacman -S reflector
+# Страна на выбор
+doas reflector --verbose --country 'Germany' -l 25 --sort rate --save /etc/pacman.d/mirrorlist-arch
+doas pacman -Suy
+```
+Установим [Yay](https://github.com/Jguer/yay):
+```bash
+doas pacman -S autoconf automake bison fakeroot flex gcc make pkgconf git # Инструменты для сборки
+cd /tmp
+git clone https://aur.archlinux.org/yay.git
+cd yay
+makepkg -si
+cd
+```
+### Флаги компилятора
+```bash
+doas vim /etc/makepkg.conf
+```
+```bash
+CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -fexceptions \
+      -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security \
+      -fstack-clash-protection -fcf-protection"
+CXXFLAGS="$CFLAGS -Wp,-D_GLIBCXX_ASSERTIONS"
+RUSTFLAGS="-C opt-level=3"
+MAKEFLAGS="-j$(nproc) -l$(nproc)"
+OPTIONS=(strip docs !libtool !staticlibs emptydirs zipman purge !debug lto)
+```
+Данные флаги компилятора выжимают максимум производительности при компиляции, но могут вызывать ошибки сборки в очень редких приложениях. Если такое случится, то отключите ‘lto’ в строке options, добавив символ восклицательного знака ("!lto").
+
+### Софт
+```bash
+yay alacritty      # Эмулятор терминала
+yay hyprland
+yay ew-wayland     # Бар
+yay google-chrome
+yay wofi           # Меню запуска приложений
+```
+Для автологина редактируем файл `/etc/dinit.d/getty.d/tty1`:
+```bash
+command = /sbin/agetty -a имя_пользователя --noclear tty1 38400 linux
+```
+### Установка ZSH
+```bash
+doas pacman -Syu zsh
+zsh # Настройка
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+```
+Настраиваем `zsh` под себя.
+
+Для автозапуска `Hyprland` добавте в файл `~/.zshrc.pre-oh-my-zsh`
+```bash
+if test -z "${XDG_RUNTIME_DIR}"; then
+  UID="$(id -u)"
+  export XDG_RUNTIME_DIR=/tmp/"${UID}"-runtime-dir
+    if ! test -d "${XDG_RUNTIME_DIR}"; then
+        mkdir "${XDG_RUNTIME_DIR}"
+        chmod 0700 "${XDG_RUNTIME_DIR}"
+    fi
+fi
+
+if [ -z "${WAYLAND_DISPLAY}" ] && [ "${XDG_VTNR}" -eq 1 ]; then
+    dbus-run-session Hyprland
+fi
+```
+### Драйверы
+```bash
+doas pacman -S amd-ucode iucode-tool
+doas mkinitcpio -P
+```
+Устанавливаем недостающие драйвера по [таблице](https://wiki.archlinux.org/title/mkinitcpio#Possibly_missing_firmware_for_module_XXXX):
+| Modul          | Package                 |
+|----------------|-------------------------|
+| aic94xx	       | aic94xx-firmware        | 
+| ast	           | ast-firmware            |
+| bfa	           | linux-firmware-qlogic   |
+| bnx2x	         | linux-firmware-bnx2x    |
+| liquidio	     | linux-firmware-liquidio |
+| mlxsw_spectrum | linux-firmware-mellanox |
+| nfp	           | linux-firmware-nfp      |
+| qed	           | linux-firmware-qlogic   |
+| qla1280	       | linux-firmware-qlogic   |
+| qla2xxx	       | linux-firmware-qlogic   |
+| wd719x	       | wd719x-firmware         |
+| xhci_pci	     | upd72020x-fw            |
+```bash
+doas pacman -S btrfs-progs # Если корень отфоратирован в btrfs
+doas mkinitcpio -P
+doas pacman -S mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader
+```
+### Еще оптимизация
+```bash
+yay ananicy-dinit
+doas dinitctl enable ananicy
+
+yay haveged-dinit
+doas dinitctl enable haveged
+```
+Ananicy — это демон для распределения приоритета задач, его установка сильно повышает отклик системы.
+
+Haveged — это демон, что следит на энтропией системы.
+
+### Звук
+```bash
+doas pacman -S pipewire pipewire-jack pipewire-alsa pavucontrol pipewire-pulse alsa-utils
+```
+Что бы звук появился в системе нужно включить автозапуск в конфиге `Hyprland`:
+```bash
+exec-once = pipewire
+exec-once = pipewire-pulse
+exec-once = wireplumber
+```
 

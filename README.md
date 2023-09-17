@@ -1,17 +1,11 @@
-# Artix-DinitHyprland-doas
+# Artix-Dinit-Hyprland-Doas
 
 ## Установка Artix
-
-### Начало
-После загрузки с USB накопителя нас встречает вывод `neofetch` и artixlinux login. Поехали!
-
 ```bash
 artixlinux login: artix
 Password: artix
-```
-Будем устанавливать систему из под root, для этого зайдем под него
 
-```bash
+# Заходим под root
 su
 ```
 ### Разметка диска
@@ -22,7 +16,7 @@ cfdisk /dev/sdXY
 ```
 Я разбиваю диски на разделы в таком варианте:
 
-> **Внимание**, если вы устанавливаете систему в режиме `Dual Boot`, то не размечаем `Efi` раздел и не форматируем.
+> **Внимание**, если вы устанавливаете систему в режиме `Dual Boot`, то не размечаем `Efi` раздел и не форматируем его.
 
 | Раздел          | Тип              | Обьем                         |
 |-----------------|------------------|-------------------------------|
@@ -31,7 +25,7 @@ cfdisk /dev/sdXY
 | Home            | Linux filesystem | Оставшееся пространство       |
 | Other           | Linux filesystem | Пространство на других дисках |
 
-Я ставлю `Artix` параллельно `Microsoft Windows`, по этому мои разделы выглядят так:
+Я ставлю `Artix` параллельно `Microsoft Windows`, поэтому мои разделы выглядят так:
 
 | Раздел          | Тип              | Устройство | Файловая система |
 |-----------------|------------------|------------|------------------|
@@ -40,9 +34,8 @@ cfdisk /dev/sdXY
 | Home            | Linux filesystem | /dev/sda5  | btrfs            |
 | Other           | Linux filesystem | /dev/sdb1  | ext4             |
 
-Создаем файловые системы на разделах:
-
 ```bash
+# Форматируем основные разделы. Все остальные будем монтировать позже 
 mkfs.fat -F32 /dev/sda1 # Не делайте это если у вас Dual Boot
 fatlabel /dev/sda1 BOOT
 
@@ -51,11 +44,8 @@ mkfs.btrfs -f -L ROOT /dev/sda4
 mkfs.btrfs -f -L HOME /dev/sda5
 
 mkfs.ext4 -L STORAGE /dev/sdb1
-```
-### Монтирование
-Примонтируем наши разделы к дерикториям:
 
-```bash
+# Монтируем
 mount /dev/sda4 /mnt
 
 mkdir -p /mnt/boot/efi
@@ -64,7 +54,19 @@ mkdir -p /mnt/home
 mount /dev/sda1 /mnt/boot/efi
 mount /dev/sda5 /mnt/home
 ```
-Проверяем все при помощи `lsblk`
+Проверяем все при помощи `lsblk`.
+```bash
+NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+sda      8:0    0 223,6G  0 disk
+├─sda1   8:1    0   100M  0 part /boot/efi
+├─--
+├─--
+├─sda4   8:4    0    34G  0 part /
+├─sda5   8:5    0   136G  0 part /home
+└─--
+sdb      8:16   0 465,8G  0 disk
+└─sdb1   8:17   0 465,8G  0 part
+```
 
 ### Интернет
 Проверяем соединение:

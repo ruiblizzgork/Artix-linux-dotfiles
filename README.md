@@ -1,5 +1,12 @@
 # Artix-Dinit-Hyprland-Doas
+Установка `Artix` в `Dual Boot` режиме. Мое железо:
+| Comp | Name                  |
+|------|-----------------------|
+| CPU  | AMD Ryzen 1600        |
+| GPU  | AMD Radeon RX580 8Gib |
+| RAM  | 16Gib                 |
 
+Источники: [Оптимизация ArchLinux](https://www.ixbt.com/live/offtopic/optimizaciya-archlinux-dlya-raboty-i-igr.html#con_1fnoe4half); [Artix Wiki](https://wiki.artixlinux.org/Main/Installation)
 ## Установка Artix
 ```bash
 artixlinux login: artix
@@ -278,7 +285,7 @@ doas pacman -Suy
 ```
 Установим [Yay](https://github.com/Jguer/yay):
 ```bash
-doas pacman -S autoconf automake bison fakeroot flex gcc make pkgconf git # Инструменты для сборки
+doas pacman -S autoconf automake bison fakeroot flex gcc make pkgconf git patch # Инструменты для сборки
 cd /tmp
 git clone https://aur.archlinux.org/yay.git
 cd yay
@@ -383,4 +390,54 @@ exec-once = pipewire-pulse
 exec-once = wireplumber
 ```
 ### Разгон
+Установим [corectrl](https://gitlab.com/corectrl/corectrl):
+```bash
 yay corectrl
+```
+```bash
+doas vim /etc/polkit-1/rules.d/90-corectrl.rules
+
+polkit.addRule(function(action, subject) {
+    if ((action.id == "org.corectrl.helper.init" ||
+         action.id == "org.corectrl.helperkiller.init") &&
+        subject.local == true &&
+        subject.active == true &&
+        subject.isInGroup("your-user-group")) {
+            return polkit.Result.YES;
+    }
+});
+```
+
+```bash
+# Узнаем свой lpj
+doas dmesg | grep lpj=
+
+doas vim /etc/default/grub
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet splash noibrs tsx_async_abort=off rootfstype=btrfs selinux=0 lpj=ваш_lpj raid=noautodetect mitigations=off preempt=none amdgpu.ppfeaturemask=0xffffffff"
+```
+lpj = это уникальный параметр для каждой системы. Самоопределяется во время загрузки, что довольно трудоёмко, поэтому лучше задать вручную. Определить ваше значение lpj можно через следующую команду: doas dmesg | grep lpj=.
+
+raid=noautodetect — отключает проверку на RAID во время загрузки. Если вы его используете RAID массив, то не прописывайте параметр.
+
+rootfstype=btrfs — Здесь указываем название ФС в которой у вас форматирован корень.
+
+elevator=noop — указывает для всех дисков планировщик ввода NONE. **Не использовать, если у вас жёсткий диск**.
+### Оптимальные флаги монтирования
+```bash
+doas vim /etc/fstab
+```
+Указываем флаги для разделов, которые находятся на SSD(/, home) 
+```bash
+rw,noatime,ssd,ssd_spread,discard=async,space_cache=v2,max_inline=256,commit=600,nodatacow,suvolid=5,subvol=/
+```
+И заменим везде realtime -> noatime
+### Собираем ядро Xanmod
+Только для amd, для intel собирайть linux-lqx
+```bash
+doas pacman -S clang llvm lld
+export _microarchitecture=99 use_numa=n use_tracers=n _compiler=clang
+yay xanmod (linux-xanmod, linux-xanmod-headers)
+doas pacman -Rns linux-zen linux-zen-headers
+doas mkinitcpio -P
+doas grub-mkconfig -o /boot/grub/grub.cfg
+```

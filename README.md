@@ -441,3 +441,15 @@ doas pacman -Rns linux-zen linux-zen-headers
 doas mkinitcpio -P
 doas grub-mkconfig -o /boot/grub/grub.cfg
 ```
+
+### Софт
+```bash
+yay steam
+yay lutris
+yay btop
+yay cmus
+yay cava
+yay discord
+yay betterdiscordctl
+yay telegram
+```

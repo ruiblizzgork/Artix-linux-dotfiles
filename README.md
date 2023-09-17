@@ -382,4 +382,5 @@ exec-once = pipewire
 exec-once = pipewire-pulse
 exec-once = wireplumber
 ```
-
+### Разгон
+yay corectrl

@@ -469,4 +469,5 @@ yay thunar-volman
 yay tumbler
 yay raw-thumbnailer
 yay libgsf
+yay go-mtpfs
 ```

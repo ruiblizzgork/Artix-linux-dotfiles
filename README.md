@@ -233,10 +233,9 @@ usermod -aG wheel,audio,video,storage имя_пользователя
 ::1        localhost
 127.0.1.1  имя_хоста.localdomain  имя_хоста
 ```
-Включим демона `connmand`  и `elogind`:
+Включим демона `connmand`:
 ```bash
 ln -s ../connmand /etc/dinit.d/boot.d/
-dinitctl enable elogind
 ```
 Doas:
 

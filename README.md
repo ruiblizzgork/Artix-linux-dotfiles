@@ -81,7 +81,7 @@ sdb      8:16   0 465,8G  0 disk
 ping google.com
 ```
 Если вы используете Wi-Fi то подключитесь к сети при помощи:
-
+```bash
 rfkill unblock wifi
 connmandctl
 >enable wifi
@@ -90,6 +90,7 @@ connmandctl
 >agent on
 >connect wifi_...
 >quit
+```
 
 Активируйте NTP для синхронизации часов компьютера с реальным временем:
 ```bash

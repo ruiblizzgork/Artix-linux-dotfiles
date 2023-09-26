@@ -345,7 +345,7 @@ doas chsh -s /bin/zsh
 ```
 Настраиваем `zsh` под себя.
 
-Для автозапуска `Hyprland` добавте в файл `~/.zshrc.pre-oh-my-zsh`
+Для автозапуска `Hyprland` добавте в файл `~/.zshrc`
 ```bash
 if test -z "${XDG_RUNTIME_DIR}"; then
   UID="$(id -u)"

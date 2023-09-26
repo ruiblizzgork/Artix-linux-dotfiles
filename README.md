@@ -324,9 +324,16 @@ yay eww-wayland     # Бар
 yay google-chrome
 yay wofi           # Меню запуска приложений
 ```
-Для автологина редактируем файл `/etc/dinit.d/getty.d/tty1`:
+Для автологина редактируем файл `/etc/dinit.d/tty1`:
 ```bash
+type            = process
 command = /sbin/agetty -a имя_пользователя --noclear tty1 38400 linux
+restart         = true
+depends-on      = loginready
+termsignal      = HUB
+smooth-recovery = true
+inittab-id      = 1
+inittab-line    = tty1
 ```
 ### Установка ZSH
 ```bash

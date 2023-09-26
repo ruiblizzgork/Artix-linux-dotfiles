@@ -80,7 +80,16 @@ sdb      8:16   0 465,8G  0 disk
 ```bash
 ping google.com
 ```
-Если вы используете Wi-Fi то подключитесь к сети при помощи утилиты [wpa_supplicant](https://wiki.archlinux.org/title/Wpa_supplicant) или [iw](https://wireless.wiki.kernel.org/en/users/documentation/iw).
+Если вы используете Wi-Fi то подключитесь к сети при помощи:
+
+rfkill unblock wifi
+connmandctl
+>enable wifi
+>scan wifi
+>services 
+>agent on
+>connect wifi_...
+>quit
 
 Активируйте NTP для синхронизации часов компьютера с реальным временем:
 ```bash

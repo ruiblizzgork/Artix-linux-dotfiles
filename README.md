@@ -340,6 +340,8 @@ inittab-line    = tty1
 doas pacman -Syu zsh
 zsh # Настройка
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+chsh -s /bin/zsh
+doas chsh -s /bin/zsh 
 ```
 Настраиваем `zsh` под себя.
 

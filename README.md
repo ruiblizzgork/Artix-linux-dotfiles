@@ -320,7 +320,7 @@ OPTIONS=(strip docs !libtool !staticlibs emptydirs zipman purge !debug lto)
 ```bash
 yay alacritty      # Эмулятор терминала
 yay hyprland
-yay ew-wayland     # Бар
+yay eww-wayland     # Бар
 yay google-chrome
 yay wofi           # Меню запуска приложений
 ```

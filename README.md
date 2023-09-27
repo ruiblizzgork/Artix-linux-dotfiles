@@ -160,7 +160,7 @@ EDITOR=vim
 ```
 Конфигурируем часовой пояс. Утилита `hwclock` позволит установить время по аппаратным часам.
 ```bash
-ln -sf /usr/share/zoneinfo/Регион/Город /etc/timezone
+ln -sf /usr/share/zoneinfo/Регион/Город /etc/localtime
 hwclock --systohc
 ```
 Расскоментируем нужные нам локали в файле `/etc/locale.gen`.

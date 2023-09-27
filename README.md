@@ -475,7 +475,6 @@ yay telegram
 yay noto-fonts
 yay noto-fonts-emoji
 yay noto-fonts-extra
-yay noto-fonts-nerd
 ```
 ### Thunar
 ```bash

@@ -1,0 +1,227 @@
+### Переменные 
+set $mod Mod4
+set $left h
+set $down j
+set $up k
+set $right l
+set $term alacritty 
+set $menu wofi --show drun -I 
+set $output-primary HDMI-A-1
+set $output-secondary DP-1
+set $mode_system System: (r)eboot, (S)hutdown
+
+
+### Настрока мониторов
+output $output-primary 		resolution 1920x1080 position 0,0
+output $output-secondary 	resolution 1280x1024 position 1920,40
+
+output $output-primary bg ~/.config/wallpaper/1.png fill
+output $output-secondary bg ~/.config/wallpaper/2.png fill
+
+workspace 1 	output $output-primary
+workspace 2 	output $output-primary
+workspace 3 	output $output-primary
+workspace 4 	output $output-primary
+workspace 5 	output $output-primary
+workspace 6 	output $output-primary
+
+workspace 7 	output $output-secondary
+workspace 8 	output $output-secondary
+workspace 9 	output $output-secondary
+workspace 10 	output $output-secondary
+
+assign [app_id="discord"] workspace 7
+
+
+### Автозапуск
+exec discord
+
+
+### SwayFx
+# Скругления
+corner_radius 12
+smart_corner_radius enable
+
+# Блюр
+blur enable
+blur_xray off
+blur_passes 3
+blur_radius 3
+
+# ТЕНИ
+shadows on
+shadows_on_csd off
+shadow_blur_radius 10
+shadow_color #2b4f6f
+
+# Затемнение неактивных окон
+default_dim_inactive 0.0
+dim_inactive_colors.unfocused #000000FF
+dim_inactive_colors.urgent #900000FF
+
+
+### Настрока окон
+# Гапсы
+gaps inner 5
+gaps outer 5
+smart_gaps off
+
+# Толщина рамок для обычных и плавающих окон
+default_border pixel 1
+default_floating_border none
+
+# Размер рамок окон
+for_window [tiling] border pixel 1
+for_window [floating] border none
+
+# Отключение рамки если открыто одно окно
+smart_borders on
+
+
+### Украшательства
+	# Шрифт (по ходу для заголовков)
+	font pango:JetBrainsMono 10
+
+	# Курсор
+	seat seat0 xcursor_theme "capitaine-cursors"
+	exec_always gsettings set org.gnome.desktop.interface cursor-theme "capitaine-cursors"
+
+	# Курсоры, темы, иконки...
+	set $gnome-schema org.gnome.desktop.interface
+exec_always {
+	gsettings set $gnome-schema gtk-theme 'Zorin-Mint-Light'
+	gsettings set $gnome-schema icon-theme 'Zorin'
+ 	gsettings set $gnome-schema cursor-theme 'capitaine-cursors'
+	gsettings set $gnome-schema font-name 'JetBrainsMono 10'
+	# Отключение кнопок управления окном
+	gsettings set org.gnome.desktop.wm.preferences button-layout ''
+}
+
+# Цвета рамок
+client.focused			#f5f7fa #f5f7fa #f5f7fa #f5f7fa
+client.focused_inactive		#123354 #123354 #123354 #123354
+client.unfocused		#123354 #123354 #123354 #123354
+client.urgent			#123354 #123354 #123354 #123354
+client.placeholder		#123354 #123354 #123354 #123354
+
+
+### Настрока ввода
+input * {
+	xkb_layout us,ru
+	xkb_options grp:win_space_toggle
+}
+input * xkb_numlock enabled
+
+
+### Хот кеи
+bindsym --to-code	$mod+Return exec $term
+bindsym --to-code 	$mod+Shift+q kill
+bindsym --to-code	$mod+d exec $menu
+
+floating_modifier 	$mod normal
+
+mode "$mode_system" {
+	bindsym --to-code r 	exec reboot, 	mode "default"
+	bindsym --to-code Shift+s exec poweroff, 	mode "default"
+
+	bindsym --to-code Return mode "default"
+	bindsym --to-code Escape mode "default"
+}
+bindsym --to-code $mod+Shift+e mode "$mode_system"
+
+bindsym --to-code	$mod+Shift+c reload
+
+# Скриншоты
+bindsym --to-code $mod+Shift+Print exec grim - | wl-copy
+bindsym --to-code $mod+Print exec grim -g "$(slurp)" - | wl-copy
+bindsym --to-code Print exec grim -o $(swaymsg -t get_outputs | jq -r '.[] | select(.focused) | .name') - | wl-copy
+
+# Фокус
+bindsym --to-code $mod+$left focus left
+bindsym --to-code $mod+$down focus down
+bindsym --to-code $mod+$up focus up
+bindsym --to-code $mod+$right focus right
+bindsym --to-code $mod+Left focus left
+bindsym --to-code $mod+Down focus down
+bindsym --to-code $mod+Up focus up
+bindsym --to-code $mod+Right focus right
+
+# Перемещение окна в фокусе
+bindsym --to-code $mod+Shift+$left move left
+bindsym --to-code $mod+Shift+$down move down
+bindsym --to-code $mod+Shift+$up move up
+bindsym --to-code $mod+Shift+$right move right
+bindsym --to-code $mod+Shift+Left move left
+bindsym --to-code $mod+Shift+Down move down
+bindsym --to-code $mod+Shift+Up move up
+bindsym --to-code $mod+Shift+Right move right
+
+# Переключение воркспейсов
+bindsym --to-code $mod+1 workspace number 1
+bindsym --to-code $mod+2 workspace number 2
+bindsym --to-code $mod+3 workspace number 3
+bindsym --to-code $mod+4 workspace number 4
+bindsym --to-code $mod+5 workspace number 5
+bindsym --to-code $mod+6 workspace number 6
+bindsym --to-code $mod+7 workspace number 7
+bindsym --to-code $mod+8 workspace number 8
+bindsym --to-code $mod+9 workspace number 9
+bindsym --to-code $mod+0 workspace number 10
+# Перемещение окон в другой воркспейс
+bindsym --to-code $mod+Shift+1 move container to workspace number 1
+bindsym --to-code $mod+Shift+2 move container to workspace number 2
+bindsym --to-code $mod+Shift+3 move container to workspace number 3
+bindsym --to-code $mod+Shift+4 move container to workspace number 4
+bindsym --to-code $mod+Shift+5 move container to workspace number 5
+bindsym --to-code $mod+Shift+6 move container to workspace number 6
+bindsym --to-code $mod+Shift+7 move container to workspace number 7
+bindsym --to-code $mod+Shift+8 move container to workspace number 8
+bindsym --to-code $mod+Shift+9 move container to workspace number 9
+bindsym --to-code $mod+Shift+0 move container to workspace number 10
+
+bindsym --to-code $mod+b splith
+bindsym --to-code $mod+v splitv
+
+bindsym --to-code $mod+s layout stacking
+bindsym --to-code $mod+w layout tabbed
+bindsym --to-code $mod+e layout toggle split
+
+bindsym --to-code $mod+f fullscreen
+
+bindsym --to-code $mod+Shift+space floating toggle
+
+bindsym --to-code $mod+space focus mode_toggle
+
+bindsym --to-code $mod+a focus parent
+
+bindsym --to-code $mod+Shift+minus move scratchpad
+
+bindsym --to-code $mod+minus scratchpad show
+
+# Ресайз
+mode "resize" {
+    bindsym --to-code $left resize shrink width 10px
+    bindsym --to-code $down resize grow height 10px
+    bindsym --to-code $up resize shrink height 10px
+    bindsym --to-code $right resize grow width 10px
+
+    # Ditto, with arrow keys
+    bindsym --to-code Left resize shrink width 10px
+    bindsym --to-code Down resize grow height 10px
+    bindsym --to-code Up resize shrink height 10px
+    bindsym --to-code Right resize grow width 10px
+
+    # Return to default mode
+    bindsym --to-code Return mode "default"
+    bindsym --to-code Escape mode "default"
+}
+bindsym --to-code $mod+r mode "resize"
+
+
+### Бар
+bar {
+	swaybar_command waybar
+	status_command while date +'%Y-%m-%d %I:%M:%S %p'; do sleep 1; done
+}
+
+include /etc/sway/config.d/*

@@ -1,12 +1,12 @@
-# Artix-Dinit-Hyprland-Doas
-Установка `Artix` в `Dual Boot` режиме. Мое железо:
+# Artix-Dinit-Sway-Doas
+Установка `Artix`. Мое железо:
 | Comp | Name                  |
 |------|-----------------------|
 | CPU  | AMD Ryzen 1600        |
 | GPU  | AMD Radeon RX580 8Gib |
 | RAM  | 16Gib                 |
 
-Источники: [Оптимизация ArchLinux](https://www.ixbt.com/live/offtopic/optimizaciya-archlinux-dlya-raboty-i-igr.html#con_1fnoe4half); [Artix Wiki](https://wiki.artixlinux.org/Main/Installation)
+Источники: [Оптимизация ArchLinux](https://ventureo.codeberg.page/); [Artix Wiki](https://wiki.artixlinux.org/Main/Installation); [Arch Wiki](https://wiki.archlinux.org/)
 ## Установка Artix
 ```bash
 artixlinux login: artix
@@ -16,30 +16,29 @@ Password: artix
 su
 ```
 ### Разметка диска
-Для разметки диска воспользуемся утилитой `cfdisk` (утилиты `fdisk` нет в коробке с `Artix`). Для просмотра информации о всех дисках, точек монтирования и др. воспользуемся `lsblk`.
+Для разметки диска воспользуемся утилитой `cfdisk`. Для просмотра информации о всех дисках, точек монтирования и др. воспользуемся `lsblk`, `lsblk -f`.
 ```bash
 lsblk
+lsblk -f
 cfdisk /dev/sdXY
 ```
-Я разбиваю диски на разделы в таком варианте:
+Я буду использовать `LWM` и криптографию:
+
+```bash
++----------------------+----------------------+ +----------------------+ +----------------+----------------+
+| Logical volume 1     | Logical volume 2     | | Logical volume 3     | | Boot device    | Encryption key |
+|                      |                      | |                      | |                | file storage   |
+| /                    | /home                | | /storage             | | /boot          | (unpartitioned |
+|                      |                      | |                      | |                | in example)    |
+| /dev/ArtixVG/root    | /dev/ArtixVG/home    | |                      | | /dev/sdc1      | /dev/sdc2      |
+|----------------------+----------------------| |----------------------| |----------------|----------------| 
+| disk drive /dev/sda encrypted using plain   | |                      | | USB stick                       |
+| mode and LVM                                | |                      | +---------------------------------|
++---------------------------------------------+ +----------------------+
+```
 
 > **Внимание**, если вы устанавливаете систему в режиме `Dual Boot`, то не размечаем `Efi` раздел и не форматируем его.
 
-| Раздел          | Тип              | Обьем                         |
-|-----------------|------------------|-------------------------------|
-| Root + SwapFile | Linux filesystem | 30Gib + 4Gib = 34Gib          |
-| Efi             | EFI System       | 512Mib                        |
-| Home            | Linux filesystem | Оставшееся пространство       |
-| Other           | Linux filesystem | Пространство на других дисках |
-
-Я ставлю `Artix` параллельно `Microsoft Windows`, поэтому мои разделы выглядят так:
-
-| Раздел          | Тип              | Устройство | Файловая система |
-|-----------------|------------------|------------|------------------|
-| Root + SwapFile | Linux filesystem | /dev/sda4  | btrfs            |
-| Efi             | EFI System       | /dev/sda1  | fat32            |
-| Home            | Linux filesystem | /dev/sda5  | btrfs            |
-| Other           | Linux filesystem | /dev/sdb1  | ext4             |
 
 ```bash
 # Форматируем основные разделы. Все остальные будем монтировать позже 

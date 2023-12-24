@@ -1,11 +1,4 @@
 # Artix-Dinit-Sway-Doas
-Установка `Artix`. Мое железо:
-| Comp | Name                  |
-|------|-----------------------|
-| CPU  | AMD Ryzen 1600        |
-| GPU  | AMD Radeon RX580 8Gib |
-| RAM  | 16Gib                 |
-
 Источники: [Оптимизация ArchLinux](https://ventureo.codeberg.page/); [Artix Wiki](https://wiki.artixlinux.org/Main/Installation); [Arch Wiki](https://wiki.archlinux.org/)
 ## Установка Artix
 ```bash
@@ -22,59 +15,53 @@ lsblk
 lsblk -f
 cfdisk /dev/sdXY
 ```
-Я буду использовать `LWM` и криптографию:
+Я буду использовать `LWM`:
 
 ```bash
-+----------------------+----------------------+ +----------------------+ +----------------+----------------+
-| Logical volume 1     | Logical volume 2     | | Logical volume 3     | | Boot device    | Encryption key |
-|                      |                      | |                      | |                | file storage   |
-| /                    | /home                | | /storage             | | /boot          | (unpartitioned |
-|                      |                      | |                      | |                | in example)    |
-| /dev/ArtixVG/root    | /dev/ArtixVG/home    | |                      | | /dev/sdc1      | /dev/sdc2      |
-|----------------------+----------------------| |----------------------| |----------------|----------------| 
-| disk drive /dev/sda encrypted using plain   | |                      | | USB stick                       |
-| mode and LVM                                | |                      | +---------------------------------|
-+---------------------------------------------+ +----------------------+
++----------------------+----------------------+ +------------------------+
+| Logical volume 1     | Logical volume 2     | | Logical volume 3       |
+|                      |                      | |                        |
+| /                    | /home                | | /mnt/storage           |
+|                      |                      | |                        |
+| /dev/ArtixVG/root    | /dev/ArtixVG/home    | | /dev/StorageVG/storage |
+|----------------------+----------------------| |------------------------|
+| disk drive /dev/sda                         | | disk drive /dev/sdb    |
+|                                             | |                        |
++---------------------------------------------+ +------------------------+
 ```
 
 > **Внимание**, если вы устанавливаете систему в режиме `Dual Boot`, то не размечаем `Efi` раздел и не форматируем его.
 
-
 ```bash
-# Форматируем основные разделы. Все остальные будем монтировать позже 
+pvcreate /dev/sda2
+vgcreate ArtixVG /dev/sda2
+lvcreate -L 50G ArtixVG -n root
+lvcreate -l 100%FREE ArtixVG -n home
+
+pvcreate /dev/sdb1
+vgcreate StorageVG /dev/sdb1
+lvcreate -l 100%FREE StorageVG -n storage
+```
+Форматирование и монтирование
+```bash 
 mkfs.fat -F32 /dev/sda1 # Не делайте это если у вас Dual Boot
 fatlabel /dev/sda1 BOOT
 
-mkfs.btrfs -f -L ROOT /dev/sda4
+mkfs.btrfs -f -L ROOT /dev/ArtixVG/root
 
-mkfs.btrfs -f -L HOME /dev/sda5
+mkfs.btrfs -f -L HOME /dev/ArtixVG/home
 
-mkfs.ext4 -L STORAGE /dev/sdb1
+mkfs.ext4 -L STORAGE /dev/StorageVG/storage
 
 # Монтируем
-mount /dev/sda4 /mnt
-
-mkdir -p /mnt/boot/efi
-mkdir -p /mnt/home
-
-mount /dev/sda1 /mnt/boot/efi
-mount /dev/sda5 /mnt/home
+mount /dev/ArtixVG/root /mnt
+mount --mkdir /dev/sda1 /mnt/boot/efi
+mount --mkdir /dev/ArtixVG/home /mnt/home
+mount --mkdir /dev/StorageVG/storage /mnt/mnt/storage
 ```
 Проверяем все при помощи `lsblk`.
-```bash
-NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
-sda      8:0    0 223,6G  0 disk
-├─sda1   8:1    0   100M  0 part /boot/efi
-├─--
-├─--
-├─sda4   8:4    0    34G  0 part /
-├─sda5   8:5    0   136G  0 part /home
-└─--
-sdb      8:16   0 465,8G  0 disk
-└─sdb1   8:17   0 465,8G  0 part
-```
 
-Проверяем соединение:
+Проверяем соединение с сетью интернет.
 
 ```bash
 ping google.com
@@ -96,34 +83,11 @@ connmandctl
 dinitctl start ntpd
 ```
 ### Установка базовой системы
-Я буду устанавливать нестандартное ядро `linux`, а [linux-zen](https://wiki.archlinux.org/title/Kernel#Officially_supported_kernels).
+Изначально я буду устанавливать нестандартное ядро `linux`, а [linux-zen](https://wiki.archlinux.org/title/Kernel#Officially_supported_kernels).
 > **Внимание**, если вы не хотите устанавливать `sudo`, то обходите стороной пакет `base-devel`.
 
 ```bash
-basestrap /mnt base dinit elogind-dinit linux-zen linux-zen-headers linux-firmware
-```
-Монтируем все остальные разделы в /mnt/mnt/...
-```bash
-mkdir -p /mnt/mnt/hd
-mount /dev/sdb1 /mnt/mnt/hd
-
-lsblk
-NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
-sda      8:0    0 223,6G  0 disk
-├─sda1   8:1    0   100M  0 part /boot/efi
-├─--
-├─--
-├─sda4   8:4    0    34G  0 part /
-├─sda5   8:5    0   136G  0 part /home
-└─--
-sdb      8:16   0 465,8G  0 disk
-└─sdb1   8:17   0 465,8G  0 part /mnt/hd
-```
-Создадим [swap file](https://wiki.archlinux.org/title/swap#Swap_file) на 4Gib:
-```bash
-btrfs subvolume create /mnt/swap
-btrfs filesystem mkswapfile --size 4g --uuid clear /mnt/swap/swapfile
-swapon /mnt/swap/swapfile
+basestrap /mnt base dinit linux-zen linux-zen-headers linux-firmware
 ```
 
 Генерируем конфиг `fstab` при помощи `fstabgen`:
@@ -137,9 +101,9 @@ artix-chroot /mnt
 ```
 Устанавливаем нужные пакеты:
 ```bash
-pacman -S vim neofetch grub efibootmgr os-prober dhclient doas connman-dinit terminus-font artix-archlinux-support ranger
+pacman -S vim neofetch grub efibootmgr os-prober dhclient doas connman-dinit terminus-font artix-archlinux-support
 ```
-> Если вам нужна поддержка Wi-Fi, то устанавливайте [wpa_supplicant](https://wiki.archlinux.org/title/Wpa_supplicant) или [iw](https://wireless.wiki.kernel.org/en/users/documentation/iw).
+> Если вам нужна поддержка Wi-Fi, то устанавливайте [wpa_supplicant](https://wiki.archlinux.org/title/Wpa_supplicant).
 ```text
 vim                       - легендарный текстовый редактор
 neofetch                  - информация о системе
@@ -151,10 +115,10 @@ connman-dinit             - сетевой менеджер
 doas                      - альтернатива sudo
 terminus-font             - шрифт для tty, поддерживающий русский язык
 artix-archlinux-support   - поддержка репозиториев arch'а
-ranger                    - консольный файловый менеджер
 ```
 Укажем редактор по умолчанию:
 ```bash
+vim /etc/environment
 EDITOR=vim
 ```
 Конфигурируем часовой пояс. Утилита `hwclock` позволит установить время по аппаратным часам.
@@ -183,7 +147,7 @@ vim /etc/locale.conf
 ```
 ```bash
 # /etc/locale.conf
-LANG=en_US.UTF-8
+LANG=ru_RU.UTF-8
 C_COLLATE=C
 ```
 Шрифт:
@@ -192,7 +156,7 @@ vim /etc/vconsole.conf
 ```
 ```bash
 vim /etc/vconsole.conf
-KEYMAP=en
+KEYMAP=ru
 FONT=ter-v20b
 ```
 ### Загрузчик
@@ -243,21 +207,7 @@ Doas:
 # /etc/doas.conf
 permit persist :wheel
 ```
-Перезагрузим систему:
-```bash
-exit
-reboot
-```
-## Пост-настройка и установка Hyprland
-`Grub` не определил вторую систему по этому обновим конфиг `grub`:
-```bash
-doas grub-mkconfig -o /boot/grub/grub.cfg
-```
-Пропишем в системный `enviroment`
-```bash
-echo "LIBSEAT_BACKEND=logind" >> /etc/enviroment
-```
-### Настраиваем pacman, чтобы тот летал
+Настраиваем pacman
 ```bash
 doas vim /etc/pacman.conf
 ```
@@ -278,6 +228,32 @@ Include = /etc/pacman.d/mirrorlist-arch
 [multilib]
 Include = /etc/pacman.d/mirrorlist-arch
 ```
+Флаги компилятора
+```bash
+doas vim /etc/makepkg.conf
+```
+```bash
+CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -fexceptions \
+      -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security \
+      -fstack-clash-protection -fcf-protection"
+CXXFLAGS="$CFLAGS -Wp,-D_GLIBCXX_ASSERTIONS"
+RUSTFLAGS="-C opt-level=3"
+MAKEFLAGS="-j$(nproc) -l$(nproc)"
+OPTIONS=(strip docs !libtool !staticlibs emptydirs zipman purge !debug lto)
+```
+Данные флаги компилятора выжимают максимум производительности при компиляции, но могут вызывать ошибки сборки в очень редких приложениях. Если такое случится, то отключите ‘lto’ в строке options, добавив символ восклицательного знака ("!lto").
+
+Перезагрузим систему:
+```bash
+exit
+reboot
+```
+## Пост-настройка
+`Grub` не определил вторую систему по этому обновим конфиг `grub`:
+```bash
+doas grub-mkconfig -o /boot/grub/grub.cfg
+```
+
 ```bash
 doas pacman-key --init
 doas pacman-key --populate archlinux
@@ -300,39 +276,13 @@ cd yay
 makepkg -si
 cd
 ```
-### Флаги компилятора
-```bash
-doas vim /etc/makepkg.conf
-```
-```bash
-CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -fexceptions \
-      -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security \
-      -fstack-clash-protection -fcf-protection"
-CXXFLAGS="$CFLAGS -Wp,-D_GLIBCXX_ASSERTIONS"
-RUSTFLAGS="-C opt-level=3"
-MAKEFLAGS="-j$(nproc) -l$(nproc)"
-OPTIONS=(strip docs !libtool !staticlibs emptydirs zipman purge !debug lto)
-```
-Данные флаги компилятора выжимают максимум производительности при компиляции, но могут вызывать ошибки сборки в очень редких приложениях. Если такое случится, то отключите ‘lto’ в строке options, добавив символ восклицательного знака ("!lto").
 
 ### Софт
 ```bash
 yay alacritty      # Эмулятор терминала
-yay hyprland
-yay eww-wayland     # Бар
-yay google-chrome
 yay wofi           # Меню запуска приложений
 ```
-Для автологина редактируем файл `/etc/dinit.d/tty1`:
-```bash
-type            = process
-command = /sbin/agetty -a имя_пользователя --noclear tty1 38400 linux
-restart         = true
-depends-on      = loginready
-termsignal      = HUB
-smooth-recovery = true
-inittab-id      = 1
-inittab-line    = tty1
+
 ```
 ### Установка ZSH
 ```bash
@@ -365,20 +315,20 @@ doas pacman -S amd-ucode iucode-tool
 doas mkinitcpio -P
 ```
 Устанавливаем недостающие драйвера по [таблице](https://wiki.archlinux.org/title/mkinitcpio#Possibly_missing_firmware_for_module_XXXX):
-| Modul          | Package                 |
-|----------------|-------------------------|
+| Modul            | Package                 |
+|------------------|-------------------------|
 | aic94xx	       | aic94xx-firmware        | 
-| ast	           | ast-firmware            |
-| bfa	           | linux-firmware-qlogic   |
-| bnx2x	         | linux-firmware-bnx2x    |
-| liquidio	     | linux-firmware-liquidio |
-| mlxsw_spectrum | linux-firmware-mellanox |
-| nfp	           | linux-firmware-nfp      |
-| qed	           | linux-firmware-qlogic   |
+| ast	             | ast-firmware            |
+| bfa	             | linux-firmware-qlogic   |
+| bnx2x	       | linux-firmware-bnx2x    |
+| liquidio	       | linux-firmware-liquidio |
+| mlxsw_spectrum   | linux-firmware-mellanox |
+| nfp	             | linux-firmware-nfp      |
+| qed	             | linux-firmware-qlogic   |
 | qla1280	       | linux-firmware-qlogic   |
 | qla2xxx	       | linux-firmware-qlogic   |
 | wd719x	       | wd719x-firmware         |
-| xhci_pci	     | upd72020x-fw            |
+| xhci_pci	       | upd72020x-fw            |
 ```bash
 doas pacman -S btrfs-progs # Если корень отфоратирован в btrfs
 doas mkinitcpio -P

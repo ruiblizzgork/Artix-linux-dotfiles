@@ -248,7 +248,7 @@ doas grub-mkconfig -o /boot/grub/grub.cfg
 Обновление ключек для `pacman`:
 ```bash
 doas pacman-key --init
-doas pacman-keArchitecture = x86_64 x86_64_v3y --populate archlinux
+doas pacman-key --populate archlinux
 doas pacman-key --populate artix
 doas pacman-key --refresh-keys
 doas pacman -Sy

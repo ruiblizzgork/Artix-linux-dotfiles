@@ -9,14 +9,13 @@ Password: artix
 su
 ```
 ### Разметка диска
-Для разметки диска воспользуемся утилитой `cfdisk`. Для просмотра информации о всех дисках, точек монтирования и др. воспользуемся `lsblk`, `lsblk -f`.
+Разметка диска утилитой `cfdisk`. Для просмотра информации о всех дисках, точек монтирования и др. воспользуемся `lsblk`, `lsblk -f`.
 ```bash
 lsblk
 lsblk -f
 cfdisk /dev/sdXY
 ```
-Я буду использовать `LWM`:
-
+`LWM`:
 ```bash
 +----------------------+----------------------+ +------------------------+
 | Logical volume 1     | Logical volume 2     | | Logical volume 3       |
@@ -30,7 +29,7 @@ cfdisk /dev/sdXY
 +---------------------------------------------+ +------------------------+
 ```
 
-> **Внимание**, если вы устанавливаете систему в режиме `Dual Boot`, то не размечаем `Efi` раздел и не форматируем его.
+> **Внимание**, если установка происходит в режиме `Dual Boot`, то не размечаем `Efi` раздел и не форматируем его, а используем, уже существующий.
 
 ```bash
 pvcreate /dev/sda2
@@ -59,14 +58,13 @@ mount --mkdir /dev/sda1 /mnt/boot/efi
 mount --mkdir /dev/ArtixVG/home /mnt/home
 mount --mkdir /dev/StorageVG/storage /mnt/mnt/storage
 ```
-Проверяем все при помощи `lsblk`.
+Проверка разделов при помощи `lsblk -f`.
 
-Проверяем соединение с сетью интернет.
-
+Проверка соединения с сетью:
 ```bash
 ping google.com
 ```
-Если вы используете Wi-Fi то подключитесь к сети при помощи:
+Подключение к беспроводной сети:
 ```bash
 rfkill unblock wifi
 connmandctl
@@ -78,58 +76,55 @@ connmandctl
 >quit
 ```
 
-Активируйте NTP для синхронизации часов компьютера с реальным временем:
+Активация NTP для синхронизации часов компьютера с реальным временем:
 ```bash
 dinitctl start ntpd
 ```
 ### Установка базовой системы
-Изначально я буду устанавливать нестандартное ядро `linux`, а [linux-zen](https://wiki.archlinux.org/title/Kernel#Officially_supported_kernels).
-> **Внимание**, если вы не хотите устанавливать `sudo`, то обходите стороной пакет `base-devel`.
+Установка нестандартного ядра [linux-zen](https://wiki.archlinux.org/title/Kernel#Officially_supported_kernels).
+> **Внимание**, для любителей `doas` противопоказан пакет `base-devel`.
 
 ```bash
 basestrap /mnt base dinit linux-zen linux-zen-headers linux-firmware
 ```
 
-Генерируем конфиг `fstab` при помощи `fstabgen`:
+генерация `fstab` при помощи `fstabgen`:
 ```bash
 fstabgen -U /mnt >> /mnt/etc/fstab
 ```
 ## Настройка базовой системы
-Меняем корень:
+Смена корня:
 ```bash
 artix-chroot /mnt
 ```
-Устанавливаем нужные пакеты:
+Установка базовых пакетов:
 ```bash
-pacman -S vim neofetch grub efibootmgr os-prober dhclient doas connman-dinit terminus-font artix-archlinux-support
+pacman -S nvim neofetch grub efibootmgr os-prober dhclient doas networkmanager-dinit terminus-font artix-archlinux-support
 ```
 > Если вам нужна поддержка Wi-Fi, то устанавливайте [wpa_supplicant](https://wiki.archlinux.org/title/Wpa_supplicant).
 ```text
-vim                       - легендарный текстовый редактор
+nvim                      - легендарный текстовый редактор
 neofetch                  - информация о системе
 grub                      - загрузчик
 efibootmgr                - изменения диспетчера загрузки UEFI
 os-prober                 - обнаружение Windows или других, не Linux Os
 dhclient                  - демон dhcp (интернет подключение)
-connman-dinit             - сетевой менеджер
+networkmanager-dinit      - сетевой менеджер
 doas                      - альтернатива sudo
 terminus-font             - шрифт для tty, поддерживающий русский язык
 artix-archlinux-support   - поддержка репозиториев arch'а
 ```
-Укажем редактор по умолчанию:
+Редактор по умолчанию:
 ```bash
 vim /etc/environment
-EDITOR=vim
+EDITOR=nvim
 ```
-Конфигурируем часовой пояс. Утилита `hwclock` позволит установить время по аппаратным часам.
+Конфигурация часового пояса. Утилита `hwclock` позволит установить время по аппаратным часам.
 ```bash
 ln -sf /usr/share/zoneinfo/Регион/Город /etc/localtime
 hwclock --systohc
 ```
-Расскоментируем нужные нам локали в файле `/etc/locale.gen`.
-```bash
-vim /etc/locale.gen
-```
+Поиск и добаление нужных нам локалей в файле `/etc/locale.gen`.
 ```bash
 # /etc/locale.gen
 # ...
@@ -137,14 +132,11 @@ en_US.UTF-8 UTF-8
 # ...
 ru_RU.UTF-8 UTF-8
 ```
-Сгенерируем локали:
+Генерация локалей:
 ```bash
 locale-gen
 ```
-Укажем локаль по умолчанию:
-```bash
-vim /etc/locale.conf
-```
+Локаль по умолчанию:
 ```bash
 # /etc/locale.conf
 LANG=ru_RU.UTF-8
@@ -152,28 +144,22 @@ C_COLLATE=C
 ```
 Шрифт:
 ```bash
-vim /etc/vconsole.conf
-```
-```bash
-vim /etc/vconsole.conf
+# /etc/vconsole.conf
 KEYMAP=ru
 FONT=ter-v20b
 ```
 ### Загрузчик
-Устанавливаем grub:
+Установка grub:
 ```bash
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=grub --recheck
 ```
-Если вы хотите `Dual Boot`, то в файле /etc/default/grub раскомментруйте строку:
-```bash
-vim /etc/default/grub
-```
+Если установка в `Dual Boot` режиме, то в файле /etc/default/grub раскомментруйте строку:
 ```bash
 # /etc/default/grub
 # ...
 GRUB_DISABLE_OS_PROBER=false
 ```
-Сгенерируем конфиг grub:
+Генерация конфига grub:
 > **Внимание**, если `grub` не нашел `Windows`, то нужно будет перегенерировать конфиг после перезагрузки пк.
 ```bash
 grub-mkconfig -o /boot/grub/grub.cfg
@@ -183,40 +169,47 @@ grub-mkconfig -o /boot/grub/grub.cfg
 ```bash
 passwd
 ```
-Создадим пользователя и зададим ему пароль и группы:
+Создание пользователя и выдача ему пароля и присвоение групп:
 ```bash
 useradd -m имя_пользователя
 passwd имя_пользователя
 usermod -aG wheel,audio,video,storage имя_пользователя
 ```
-Настроим сеть:
+Настройка сети:
 В файле `/etc/hostname` укажем имя хоста, а в `/etc/hosts` укажем:
 ```bash
+# /etc/hostname
 127.0.0.1  localhost
 ::1        localhost
 127.0.1.1  имя_хоста.localdomain  имя_хоста
 ```
-Включим демона `connmand`:
+Запуск демона `networkmanager`:
 ```bash
-ln -s ../connmand /etc/dinit.d/boot.d/
+dinitctl enable NetworkManager
 ```
 Doas:
-
-В файле `/etc/doas.conf`:
+В файле `/etc/doas.conf`:Настраиваем pacman
+```bash
+doas vim /etc/pacman.conf
+```
 ```bash
 # /etc/doas.conf
 permit persist :wheel
 ```
-Настраиваем pacman
+Проверка поддерживаемой архитектуры:
 ```bash
-doas vim /etc/pacman.conf
+/lib/ld-linux-x86-64.so.2 --help | grep "x86-64"
 ```
-Раскомментируем и добавим следующие строки:
+Настраиваем pacman:
 ```bash
+# /etc/pacman.conf
 [options]
-IgnorePkg = sudo      # Игнорируем пакет sudo. При установки sudo pacman будет предупреждать, что он игнорируемый
-Color                 # Раскомментируем
+Architecture = x86_64 x86_64_v3
+IgnorePkg = sudo                  # Игнорируем пакет sudo. При установки sudo pacman будет предупреждать, что он игнорируемый
+Color                             # Раскомментируем
+VerbosePkgLists
 ParallelDownloads = 5 # Раскомментируем
+DisableDownloadTimeout
 
 # Репы Arch'а
 [extra]
@@ -228,17 +221,16 @@ Include = /etc/pacman.d/mirrorlist-arch
 [multilib]
 Include = /etc/pacman.d/mirrorlist-arch
 ```
-Флаги компилятора
+Флаги компилятора:
 ```bash
-doas vim /etc/makepkg.conf
-```
-```bash
+# /etc/makepkg.conf
 CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -fexceptions \
       -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security \
       -fstack-clash-protection -fcf-protection"
 CXXFLAGS="$CFLAGS -Wp,-D_GLIBCXX_ASSERTIONS"
 RUSTFLAGS="-C opt-level=3"
 MAKEFLAGS="-j$(nproc) -l$(nproc)"
+...
 OPTIONS=(strip docs !libtool !staticlibs emptydirs zipman purge !debug lto)
 ```
 Данные флаги компилятора выжимают максимум производительности при компиляции, но могут вызывать ошибки сборки в очень редких приложениях. Если такое случится, то отключите ‘lto’ в строке options, добавив символ восклицательного знака ("!lto").
@@ -253,21 +245,22 @@ reboot
 ```bash
 doas grub-mkconfig -o /boot/grub/grub.cfg
 ```
-
+Обновление ключек для `pacman`:
 ```bash
 doas pacman-key --init
-doas pacman-key --populate archlinux
+doas pacman-keArchitecture = x86_64 x86_64_v3y --populate archlinux
 doas pacman-key --populate artix
 doas pacman-key --refresh-keys
 doas pacman -Sy
 ```
+Добовление зеркал репозиториев (можно вручную найти на сайтах Arch Linux и Artix)
 ```bash
 doas pacman -S reflector
 # Страна на выбор
 doas reflector --verbose --country 'Germany' -l 25 --sort rate --save /etc/pacman.d/mirrorlist-arch
 doas pacman -Suy
 ```
-Установим [Yay](https://github.com/Jguer/yay):
+Установка [Yay](https://github.com/Jguer/yay):
 ```bash
 doas pacman -S autoconf automake bison fakeroot flex gcc make pkgconf git patch # Инструменты для сборки
 cd /tmp
@@ -280,7 +273,6 @@ cd
 ### Софт
 ```bash
 yay alacritty      # Эмулятор терминала
-yay wofi           # Меню запуска приложений
 ```
 
 ```
@@ -294,21 +286,6 @@ doas chsh -s /bin/zsh
 ```
 Настраиваем `zsh` под себя.
 
-Для автозапуска `Hyprland` добавте в файл `~/.zshrc`
-```bash
-if test -z "${XDG_RUNTIME_DIR}"; then
-  UID="$(id -u)"
-  export XDG_RUNTIME_DIR=/tmp/"${UID}"-runtime-dir
-    if ! test -d "${XDG_RUNTIME_DIR}"; then
-        mkdir "${XDG_RUNTIME_DIR}"
-        chmod 0700 "${XDG_RUNTIME_DIR}"
-    fi
-fi
-
-if [ -z "${WAYLAND_DISPLAY}" ] && [ "${XDG_VTNR}" -eq 1 ]; then
-    dbus-run-session Hyprland
-fi
-```
 ### Драйверы
 ```bash
 doas pacman -S amd-ucode iucode-tool
@@ -332,7 +309,8 @@ doas mkinitcpio -P
 ```bash
 doas pacman -S btrfs-progs # Если корень отфоратирован в btrfs
 doas mkinitcpio -P
-doas pacman -S mesa lib32-mesa vulkan-radeon lib32-vulkan-radeon vulkan-icd-loader lib32-vulkan-icd-loader
+doas pacman -S mesa vulkan-radeon vulkan-icd-loader
+doas pacman -S lib32-mesa lib32-vulkan-radeon lib32-vulkan-icd-loader
 ```
 ### Еще оптимизация
 ```bash
@@ -356,6 +334,22 @@ exec-once = pipewire
 exec-once = pipewire-pulse
 exec-once = wireplumber
 ```
+
+### Swap
+Есть 2 варианта: `zram`, `swapfile`:
+```bash
+yay zramen-dinit
+zramen make
+doas dinitctl enable zramen
+```
+```bash
+btrfs subvolume create /swap
+btrfs filesystem mkswapfile --size 16g --uuid clear /swap/swapfile
+swapon /swap/swapfile
+# /etc/fstab
+/swap/swapfile none swap defaults 0 0
+```
+
 ### Разгон
 Установим [corectrl](https://gitlab.com/corectrl/corectrl):
 ```bash
@@ -374,66 +368,73 @@ polkit.addRule(function(action, subject) {
     }
 });
 ```
-
+### Параметры ядра
 ```bash
 # Узнаем свой lpj
 doas dmesg | grep lpj=
 
 doas vim /etc/default/grub
-GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet splash noibrs tsx_async_abort=off rootfstype=btrfs selinux=0 lpj=ваш_lpj raid=noautodetect mitigations=off preempt=none amdgpu.ppfeaturemask=0xffffffff"
+GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet sysctl.vm.swappiness=10 amdgpu.ppfeaturemask=0xffffffff"
 ```
-lpj = это уникальный параметр для каждой системы. Самоопределяется во время загрузки, что довольно трудоёмко, поэтому лучше задать вручную. Определить ваше значение lpj можно через следующую команду: doas dmesg | grep lpj=.
+lpj= - Уникальный параметр для каждой системы. Его значение автоматически определяется во время загрузки, что довольно трудоемко, поэтому лучше задать вручную. Определить ваше значение для lpj можно через следующую команду: sudo dmesg | grep "lpj="
 
-raid=noautodetect — отключает проверку на RAID во время загрузки. Если вы его используете RAID массив, то не прописывайте параметр.
+mitigations=off - Непосредственно отключает все заплатки безопасности ядра (включая Spectre и Meltdown). Подробнее об этом написано здесь.
 
-rootfstype=btrfs — Здесь указываем название ФС в которой у вас форматирован корень.
+nowatchdog - Отключает сторожевые таймеры. Позволяет избавиться от заиканий в онлайн играх.
 
-elevator=noop — указывает для всех дисков планировщик ввода NONE. **Не использовать, если у вас жёсткий диск**.
-### Оптимальные флаги монтирования
+page_alloc.shuffle=1 - Этот параметр рандомизирует свободные списки распределителя страниц. Улучшает производительность при работе с ОЗУ с очень быстрыми накопителями (NVMe, Optane). Подробнее тут.
+
+threadirqs - задействует многопоточную обработку IRQ прерываний.
+
+split_lock_detect=off - Отключаем раздельные блокировки шины памяти. Одна инструкция с раздельной блокировкой может занимать шину памяти в течение примерно 1 000 тактов, что может приводить к кратковременным зависаниям системы.
+
+intel_idle.max_cstate=1 - только для процессоров Intel. Отключает энергосберегательные функции процессора, ограничивая его спящие состояния, не позволяя ему переходить в состояние глубокого сна. Увеличивает (может значительно увеличить) энергопотребление на ноутбуках. Помогает исправлять некоторые странные зависания и ошибки на многих системах.
+
+pci=pcie_bus_perf - Увеличивает значение Max Payload Size (MPS) для родительской шины PCI Express. Это даёт лучшую пропускную способность, т. к. некоторые устройства могут использовать значение MPS/MRRS выше родительской шины.
+
+[https://unix.stackexchange.com/questions/684623/pcie-bus-perf-understanding-the-capping-of-mrrs]
+
+[https://www.programmersought.com/article/74187399630/]
+
+libahci.ignore_sss=1 - Отключает ступенчатое включение жёстких дисков. Ускоряет работу HDD.
+
+### Установка кастомного ядра linux-cachyos
 ```bash
-doas vim /etc/fstab
-```
-Указываем флаги для разделов, которые находятся на SSD(/, home) 
-```bash
-rw,noatime,ssd,ssd_spread,discard=async,space_cache=v2,max_inline=256,commit=600,nodatacow,suvolid=5,subvol=/
-```
-И заменим везде realtime -> noatime
-### Собираем ядро Xanmod
-Только для amd, для intel собирайть linux-lqx
-```bash
-doas pacman -S clang llvm lld
-export _microarchitecture=99 use_numa=n use_tracers=n _compiler=clang
-yay xanmod (linux-xanmod, linux-xanmod-headers)
-doas pacman -Rns linux-zen linux-zen-headers
-doas mkinitcpio -P
-doas grub-mkconfig -o /boot/grub/grub.cfg
+sudo pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
+sudo pacman-key --lsign-key F3B607488DB35A47
+sudo pacman -U 'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-3-1-any.pkg.tar.zst' 'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-18-1-any.pkg.tar.zst' 'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-18-1-any.pkg.tar.zst' 'https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v4-mirrorlist-6-1-any.pkg.tar.zst' 'https://mirror.cachyos.org/repo/x86_64/cachyos/pacman-6.0.2-14-x86_64.pkg.tar.zst'
 ```
 
+```bash
+# /etc/pacman.conf
+[options]
+Architecture = x86_64 x86_64_v3
+
+[cachyos-v3]
+Include = /etc/pacman.d/cachyos-v3-mirrorlist
+```
+
+```bash
+doas pacman -Syyuu
+doas pacman -S linux-cachyos-bore
+doas pacman -S linux-cachyos-bore-headers
+```
 ### Софт
 ```bash
 yay steam
-yay lutris
+yay heroic-games-launcher-bin
 yay btop
 yay cmus
+yay mpv
 yay cava
 yay ark
 yay p7zip
 yay discord
 yay betterdiscordctl
 yay telegram
+# Шрифты
 yay noto-fonts
 yay noto-fonts-emoji
 yay noto-fonts-extra
-```
-### Thunar
-```bash
-yay thunar
-yay gvfs
-yay thunar-archive-plugin
-yay thunar-media-tags-plugin
-yay thunar-volman
-yay tumbler
-yay raw-thumbnailer
-yay libgsf
-yay go-mtpfs
+yay noto-fonts-nerd
 ```

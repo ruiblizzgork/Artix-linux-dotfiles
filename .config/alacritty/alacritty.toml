@@ -32,4 +32,4 @@ white   = '#ab8bc3'
     size = 12.0
 
 [window]
-    opacity = 1
+    opacity = 0.85

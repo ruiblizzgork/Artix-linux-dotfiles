@@ -46,6 +46,9 @@ ForegroundNormal=235,74,68
 ForegroundPositive=25,214,118
 ForegroundVisited=72,188,195
 
+[Colors:Header]
+BackgroundAlternate=11,5,8
+
 [Colors:Selection]
 BackgroundAlternate=251,233,11
 BackgroundNormal=253,249,4
